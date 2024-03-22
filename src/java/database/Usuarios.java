@@ -1,4 +1,4 @@
-package newpackage;
+package database;
 
 public class Usuarios{
     String nombre;

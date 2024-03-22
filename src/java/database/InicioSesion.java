@@ -1,4 +1,4 @@
-package newpackage;
+package database;
 
 import java.io.IOException;
 import java.io.PrintWriter;

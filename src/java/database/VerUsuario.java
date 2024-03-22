@@ -1,4 +1,4 @@
-package newpackage;
+package database;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -9,74 +9,74 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.sql.Connection;         
-import java.sql.DriverManager;       
-import java.sql.PreparedStatement;
+import java.sql.Connection;          
+import java.sql.DriverManager;     
 import java.sql.ResultSet;
-import java.sql.SQLException;        
+import java.sql.SQLException;       
 import java.sql.Statement;
-import javax.servlet.RequestDispatcher;
 
-@WebServlet(name = "InsertarUsuario", urlPatterns = {"/InsertarUsuario"})
-public class InsertarUsuario extends HttpServlet {
+@WebServlet(name = "VerUsuario", urlPatterns = {"/VerUsuario"})
+public class VerUsuario extends HttpServlet {
     
     Connection con=null;
     String mensaje="Hola";
     String consulta=" ";
     Statement sentencia;
     private final String url = "jdbc:mysql://localhost/bdprueba";
-    PreparedStatement psPrepararSentencia;
-
+    String tabla="<h2 align=\"center\"><font><img src=\"img/diversos/ver_usuarios.png\" class=\"centerimg\" alt=\"No se pudo mostrar la imagen\"><strong>Base de datos de usuarios</strong></font></h2>"
+                        +"<table align=\"center\" cellpadding=\"5\" cellspacing=\"5\" border=\"1\">"
+                        +"<tr>"
+                        +"<td><b>Nombre</b></td>"
+                        +"<td><b>Contraseña</b></td>"
+                        +"<td><b>Intentos</b></td>"
+                        +"<td><b>Bloqueado</b></td>"
+                        +"<td><b>Admin</b></td>"
+                        +"</tr>";
     
-    String nombre="";
-    String clave="";
-    int intentos=0;
-    int bloqueado=0;
-    int admin=0;
     
-    @Override
-    public void init() throws ServletException{}
-    
-    //Metodo recuperar datos
-    private void consulta(String n) {
-        boolean resultado=false;
-        try {
-            mensaje = "";
-            Class.forName("com.mysql.jdbc.Driver");
-            con = DriverManager.getConnection(url, "root", "");
-            if (con != null) {
-                consulta = "select * from usuarios where nombre=?";
-                PreparedStatement ps=con.prepareStatement(consulta);
-                ps.setString(1,n);
-                ResultSet rs=ps.executeQuery();
-                
-                if(rs.getRow()!=0)
-                    resultado=true;
-                
-                while(rs.next()){ 
-                    nombre=rs.getString("nombre");
-                    clave=rs.getString("clave");
-                    intentos=rs.getInt("intentos");
-                    bloqueado= rs.getInt("bloqueado");
-                    admin= rs.getInt("admin");
-                    mensaje="hola";
-                }   
-                con.close();
-            }
-        } catch (SQLException e) {
-            mensaje = e.getMessage();
-        } catch (ClassNotFoundException e) {
-        }
-    }
-    
-    //Metodo para conectar a la base de datos
+    //Metodo conectar
     private void conectar(){
           try {   
-            Class.forName("com.mysql.jdbc.Driver");   
+            Class.forName("com.mysql.jdbc.Driver");  
             con = DriverManager.getConnection(url, "root", "");    
-            if (con != null) {                
+            if (con != null) {                       
                 mensaje = "Conexión a base de datos funcionando";
             }
+        }
+        catch (SQLException e) 
+        {
+            mensaje = e.getMessage();
+        } catch (ClassNotFoundException e) 
+        {
+
+        }
+    }
+         
+        //Metodo para generar la tabla con los usuarios
+        private void ver(){
+        try {   
+            Class.forName("com.mysql.jdbc.Driver");     
+            con = DriverManager.getConnection(url, "root", "");   
+            if (con != null) {                         
+                mensaje = "Conexión a base de datos funcionando";
+                consulta="SELECT * FROM usuarios";
+                sentencia=con.createStatement();
+                ResultSet rs = sentencia.executeQuery(consulta);
+
+                while (rs.next()) {
+                    tabla+="<tr><td>"+rs.getString("nombre")+"</td>"
+                            +"<td>"+rs.getString("clave")+"</td>"
+                            +"<td>"+rs.getInt("intentos")+"</td>"
+                            +"<td>"+rs.getInt("bloqueado")+"</td>"
+                            +"<td>"+rs.getInt("admin")+"</td></tr>";
+                }
+               
+                con.close();
+
+            }
+            else
+                mensaje="Conexion no lograda";
+            
         }
         catch (SQLException e) 
         {
@@ -86,59 +86,18 @@ public class InsertarUsuario extends HttpServlet {
 
         }
     }
-    
-    //Metodo para insertar usuarios
-    private void insertar(String nombre, String clave){
-        try{
-            PreparedStatement ps=con.prepareStatement("Insert into usuarios values (?,?,?,?,?)");
-            ps.setString(1,nombre);
-            ps.setString(2,clave);
-            ps.setInt(3,0);
-            ps.setInt(4,0);
-            ps.setInt(5,0);
-            int row=ps.executeUpdate();
-            if(row!=0)
-                mensaje="El siguiente usuario ha sido insertado correctamente: ";
-            else
-                mensaje="No ocurrio nada";
-        }catch (SQLException ex){
-            Logger.getLogger(InsertarUsuario.class.getName()).log(Level.SEVERE,null,ex);
-        }      
-    }
-    
-    
+
+        
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
-        
         try (PrintWriter out = response.getWriter()) {
             
-            //Recuperación datos del html
-            String user=request.getParameter("usuario");
-            String password=request.getParameter("contrasena");
-            RequestDispatcher rd;
-            
-
-
-          //Para evitar errores al no colocar nada
-          if(request.getParameter("usuario").isEmpty())
-              response.sendRedirect("Insertar_V.html");
-            
-          //Recuperacion datos
-            consulta(user);
-            
-            //Conexion a base de datos
-            conectar();
-           
-            if(user.equals(nombre))
-                response.sendRedirect("Insertar_UE.html");
-            
-            else{
-            insertar(user,password);
+            //Impresion de la tabla de usuarios
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Insertar un usuario</title>");    
+            out.println("<title>Actualización de datos</title>");    
                         out.println("<style>");
                         out.println(".button {");
                         out.println("border: none;");
@@ -173,29 +132,27 @@ public class InsertarUsuario extends HttpServlet {
                         out.println("width: 7.5%;");
                         out.println("height:7.5%");
                         out.println("}");
-
-                        out.println("</style>");
+                        out.println("</style>");     
             out.println("</head>");
-            out.println("<body style=\"background-color:cornsilk;\">");
-            out.println("<h1>Insertar un usuario</h1>");
-            if(mensaje.equals("El siguiente usuario ha sido insertado correctamente: ")){
-                out.println("<br>");
-                out.println("<b>"+mensaje+"</b>");
-                out.println(user);
-                out.println("<br>");
-                out.println("<b>Su contraseña es: </b>"+password);
-            }
-            //
-            else
-                out.println(mensaje);
+            out.println("<body style=\"background-color:peachpuff;\">");
+            out.println("<h1>Tabla de usuarios</h1>");
+            //Con este metodo se muestra el contenido
+            ver();
+            out.println(tabla+"</table>");
+            tabla="<h2 align=\"center\"><font><img src=\"img/diversos/ver_usuarios.png\" class=\"centerimg\" alt=\"No se pudo mostrar la imagen\"><strong>Base de datos de usuarios</strong></font></h2>"
+                        +"<table align=\"center\" cellpadding=\"5\" cellspacing=\"5\" border=\"1\">"
+                        +"<tr>"
+                        +"<td><b>Nombre</b></td>"
+                        +"<td><b>Contraseña</b></td>"
+                        +"<td><b>Intentos</b></td>"
+                        +"<td><b>Bloqueado</b></td>"
+                        +"<td><b>Admin</b></td>"
+                        +"</tr>";
             out.println("<br>");
             out.println("<br>");
-             out.println("<a href=\"Menu.html\" class=\"button button1\" >Regresar al menu</a>");
-            out.println("<br>");
-            out.println("<a href=\"Insertar.html\" class=\"button button2\" >Insertar otro usuario</a>");
+            out.println("<a href=\"Menu.html\" class=\"button button1\" >Regresar al menu</a>");
             out.println("</body>");
             out.println("</html>");
-        }
         }
     }
 

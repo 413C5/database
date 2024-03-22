@@ -12,6 +12,11 @@ An administrator has privileges to insert new users (ensuring uniqueness), delet
 - If the mysql-connector is not recognized, manually add it (provided with the project).
 - When configuring the project, select Tomcat as the server.
 
+You can access phpMyAdmin and the localhost through the following links:
+
+http://localhost/phpmyadmin
+
+http://localhost:8080/
 
 # About this Project
 This project was developed in Java to demonstrate the utilization of servlets for user authentication, specifically interacting with an SQL database, using JDK 8u391.

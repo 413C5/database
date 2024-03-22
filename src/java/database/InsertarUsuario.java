@@ -1,29 +1,32 @@
-package newpackage;
+package database;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.sql.Connection;    
-import java.sql.DriverManager;      
-import java.sql.PreparedStatement;  
+import java.sql.Connection;         
+import java.sql.DriverManager;       
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;   
+import java.sql.SQLException;        
 import java.sql.Statement;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import javax.servlet.RequestDispatcher;
 
-@WebServlet(name = "ActualizarUsuario", urlPatterns = {"/ActualizarUsuario"})
-public class ActualizarUsuario extends HttpServlet {
+@WebServlet(name = "InsertarUsuario", urlPatterns = {"/InsertarUsuario"})
+public class InsertarUsuario extends HttpServlet {
     
     Connection con=null;
     String mensaje="Hola";
     String consulta=" ";
     Statement sentencia;
     private final String url = "jdbc:mysql://localhost/bdprueba";
+    PreparedStatement psPrepararSentencia;
+
     
     String nombre="";
     String clave="";
@@ -34,7 +37,7 @@ public class ActualizarUsuario extends HttpServlet {
     @Override
     public void init() throws ServletException{}
     
-    //Metodo para recuperar datos
+    //Metodo recuperar datos
     private void consulta(String n) {
         boolean resultado=false;
         try {
@@ -64,45 +67,43 @@ public class ActualizarUsuario extends HttpServlet {
             mensaje = e.getMessage();
         } catch (ClassNotFoundException e) {
         }
-    }  
+    }
     
     //Metodo para conectar a la base de datos
     private void conectar(){
           try {   
-            Class.forName("com.mysql.jdbc.Driver");     
-            con = DriverManager.getConnection(url, "root", "");   
-            if (con != null) {      
+            Class.forName("com.mysql.jdbc.Driver");   
+            con = DriverManager.getConnection(url, "root", "");    
+            if (con != null) {                
                 mensaje = "Conexión a base de datos funcionando";
             }
         }
         catch (SQLException e) 
         {
             mensaje = e.getMessage();
-        } catch (ClassNotFoundException e) 
+        } catch (ClassNotFoundException e)
         {
+
         }
     }
     
-    //Metodo para actualizar/desbloquear usuario
-    private void actualizar(String nombre,String clave){
+    //Metodo para insertar usuarios
+    private void insertar(String nombre, String clave){
         try{
-            PreparedStatement ps=con.prepareStatement( "update Usuarios set clave=?, intentos =0, bloqueado =0  where nombre=?");
-            //Va de acuerdo al orden de los ? que aparecen
-            ps.setString(1,clave);
-            ps.setString(2,nombre);
-            /*ps.setInt(3,0);
+            PreparedStatement ps=con.prepareStatement("Insert into usuarios values (?,?,?,?,?)");
+            ps.setString(1,nombre);
+            ps.setString(2,clave);
+            ps.setInt(3,0);
             ps.setInt(4,0);
             ps.setInt(5,0);
-            */
             int row=ps.executeUpdate();
-            if (row!=0)
-                mensaje="Usuario actualizado correctamente";
+            if(row!=0)
+                mensaje="El siguiente usuario ha sido insertado correctamente: ";
             else
-                 mensaje=" Usuario " +nombre +" no existe";
+                mensaje="No ocurrio nada";
         }catch (SQLException ex){
-            Logger.getLogger(ActualizarUsuario.class.getName()).log(Level.SEVERE,null,ex);
-        }  
-        
+            Logger.getLogger(InsertarUsuario.class.getName()).log(Level.SEVERE,null,ex);
+        }      
     }
     
     
@@ -112,25 +113,32 @@ public class ActualizarUsuario extends HttpServlet {
         
         try (PrintWriter out = response.getWriter()) {
             
-            //Recuperacion datos del html
+            //Recuperación datos del html
             String user=request.getParameter("usuario");
-            String password=request.getParameter("contrasena");     
+            String password=request.getParameter("contrasena");
+            RequestDispatcher rd;
             
+
+
           //Para evitar errores al no colocar nada
           if(request.getParameter("usuario").isEmpty())
-              response.sendRedirect("Actualizar_V.html");
+              response.sendRedirect("Insertar_V.html");
+            
+          //Recuperacion datos
+            consulta(user);
             
             //Conexion a base de datos
             conectar();
+           
+            if(user.equals(nombre))
+                response.sendRedirect("Insertar_UE.html");
             
-            //Actualizar datos del usuario
-            actualizar(user,password);
-            
-            //Se envia el mensaje exitoso
+            else{
+            insertar(user,password);
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Actualización de datos</title>");    
+            out.println("<title>Insertar un usuario</title>");    
                         out.println("<style>");
                         out.println(".button {");
                         out.println("border: none;");
@@ -168,24 +176,26 @@ public class ActualizarUsuario extends HttpServlet {
 
                         out.println("</style>");
             out.println("</head>");
-            out.println("<body style=\"background-color:bisque;\">");
-            out.println("<h1>Actualización de usuarios</h1>");
-            if(mensaje.equals("Usuario actualizado correctamente")){
+            out.println("<body style=\"background-color:cornsilk;\">");
+            out.println("<h1>Insertar un usuario</h1>");
+            if(mensaje.equals("El siguiente usuario ha sido insertado correctamente: ")){
                 out.println("<br>");
-                out.println("<b>Usuario: </b>"+user);
+                out.println("<b>"+mensaje+"</b>");
+                out.println(user);
                 out.println("<br>");
-                out.println("<b>Su nueva contraseña es: </b>"+password);
+                out.println("<b>Su contraseña es: </b>"+password);
             }
             //
-            else 
+            else
                 out.println(mensaje);
             out.println("<br>");
             out.println("<br>");
-            out.println("<a href=\"Menu.html\" class=\"button button1\" >Regresar al menu</a>");
+             out.println("<a href=\"Menu.html\" class=\"button button1\" >Regresar al menu</a>");
             out.println("<br>");
-            out.println("<a href=\"Actualizar.html\" class=\"button button2\" >Actualizar otro usuario</a>");
+            out.println("<a href=\"Insertar.html\" class=\"button button2\" >Insertar otro usuario</a>");
             out.println("</body>");
             out.println("</html>");
+        }
         }
     }
 

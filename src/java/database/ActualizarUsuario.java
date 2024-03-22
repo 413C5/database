@@ -1,32 +1,29 @@
-package newpackage;
+package database;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.sql.Connection;         
+import java.sql.Connection;    
 import java.sql.DriverManager;      
-import java.sql.PreparedStatement;
+import java.sql.PreparedStatement;  
 import java.sql.ResultSet;
-import java.sql.SQLException;        
+import java.sql.SQLException;   
 import java.sql.Statement;
-import javax.servlet.RequestDispatcher;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-@WebServlet(name = "BorrarUsuario", urlPatterns = {"/BorrarUsuario"})
-public class BorrarUsuario extends HttpServlet {
+@WebServlet(name = "ActualizarUsuario", urlPatterns = {"/ActualizarUsuario"})
+public class ActualizarUsuario extends HttpServlet {
     
     Connection con=null;
     String mensaje="Hola";
     String consulta=" ";
     Statement sentencia;
     private final String url = "jdbc:mysql://localhost/bdprueba";
-    PreparedStatement psPrepararSentencia;
-
     
     String nombre="";
     String clave="";
@@ -67,38 +64,43 @@ public class BorrarUsuario extends HttpServlet {
             mensaje = e.getMessage();
         } catch (ClassNotFoundException e) {
         }
-    }
+    }  
     
     //Metodo para conectar a la base de datos
     private void conectar(){
-          try { 
+          try {   
             Class.forName("com.mysql.jdbc.Driver");     
-            con = DriverManager.getConnection(url, "root", ""); 
-            if (con != null) {                   
+            con = DriverManager.getConnection(url, "root", "");   
+            if (con != null) {      
                 mensaje = "Conexión a base de datos funcionando";
             }
         }
-        catch (SQLException e)
+        catch (SQLException e) 
         {
             mensaje = e.getMessage();
-        } catch (ClassNotFoundException e)
+        } catch (ClassNotFoundException e) 
         {
-
         }
     }
     
-    //Metodo para borrar usuarios
-    private void borrar(String nombre){
+    //Metodo para actualizar/desbloquear usuario
+    private void actualizar(String nombre,String clave){
         try{
-            PreparedStatement ps=con.prepareStatement("DELETE FROM usuarios WHERE NOMBRE=?");
-            ps.setString(1,nombre);
+            PreparedStatement ps=con.prepareStatement( "update Usuarios set clave=?, intentos =0, bloqueado =0  where nombre=?");
+            //Va de acuerdo al orden de los ? que aparecen
+            ps.setString(1,clave);
+            ps.setString(2,nombre);
+            /*ps.setInt(3,0);
+            ps.setInt(4,0);
+            ps.setInt(5,0);
+            */
             int row=ps.executeUpdate();
             if (row!=0)
-                mensaje="Usuario "+nombre+" borrado correctamente";
+                mensaje="Usuario actualizado correctamente";
             else
-                mensaje="Usuario "+nombre+" no existe.Por favor intente con otro usuario";
+                 mensaje=" Usuario " +nombre +" no existe";
         }catch (SQLException ex){
-            Logger.getLogger(BorrarUsuario.class.getName()).log(Level.SEVERE,null,ex);
+            Logger.getLogger(ActualizarUsuario.class.getName()).log(Level.SEVERE,null,ex);
         }  
         
     }
@@ -110,31 +112,25 @@ public class BorrarUsuario extends HttpServlet {
         
         try (PrintWriter out = response.getWriter()) {
             
-            //Recuperacion de datos del html
+            //Recuperacion datos del html
             String user=request.getParameter("usuario");
-            RequestDispatcher rd;
+            String password=request.getParameter("contrasena");     
             
-            //Solo cuando no se coloca absolutamente nada
-            if(request.getParameter("usuario").isEmpty())
-              response.sendRedirect("Borrar_V.html");
+          //Para evitar errores al no colocar nada
+          if(request.getParameter("usuario").isEmpty())
+              response.sendRedirect("Actualizar_V.html");
             
-            //Recuperación datos del usuario
-            consulta(user);
-            
-            //Conexión a base de datos
+            //Conexion a base de datos
             conectar();
             
-            //Para evitar que se borre el usuario administrador, se usa esta condición
-            if(user.equals("admin") || nombre.equals("admin"))
-                response.sendRedirect("Borrar_A.html");
+            //Actualizar datos del usuario
+            actualizar(user,password);
             
-            //Caso contrario se procede a borrar el usuario
-            else{
-            borrar(user);
+            //Se envia el mensaje exitoso
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Borrado de usuarios</title>");    
+            out.println("<title>Actualización de datos</title>");    
                         out.println("<style>");
                         out.println(".button {");
                         out.println("border: none;");
@@ -172,17 +168,24 @@ public class BorrarUsuario extends HttpServlet {
 
                         out.println("</style>");
             out.println("</head>");
-            out.println("<body style=\"background-color:aliceblue;\">");
-            out.println("<h1>Borrado de usuarios</h1>");
-            out.println(mensaje);
+            out.println("<body style=\"background-color:bisque;\">");
+            out.println("<h1>Actualización de usuarios</h1>");
+            if(mensaje.equals("Usuario actualizado correctamente")){
+                out.println("<br>");
+                out.println("<b>Usuario: </b>"+user);
+                out.println("<br>");
+                out.println("<b>Su nueva contraseña es: </b>"+password);
+            }
+            //
+            else 
+                out.println(mensaje);
             out.println("<br>");
             out.println("<br>");
             out.println("<a href=\"Menu.html\" class=\"button button1\" >Regresar al menu</a>");
             out.println("<br>");
-            out.println("<a href=\"Borrar.html\" class=\"button button2\" >Borrar otro usuario</a>");
+            out.println("<a href=\"Actualizar.html\" class=\"button button2\" >Actualizar otro usuario</a>");
             out.println("</body>");
             out.println("</html>");
-        }
         }
     }
 
